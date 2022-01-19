@@ -1,35 +1,20 @@
 import React, { FC, useEffect, useReducer } from 'react'
-import { getWordleTester, PlaceResult } from './game'
 import Grid from '@mui/material/Grid'
 import Box from '@mui/material/Box'
 
+import { getWordleTester, PlaceResult } from './game'
+import { LetterBox, LetterBoxState, LetterBoxProps } from './LetterBox'
 const words = new Set(['bear', 'leap', 'sper'])
-export enum LetterBoxState {
-  vacant,
-  awaitingInput,
-  thirstyForInput,
-  inputStandby,
-  inputSending,
-  incorrectLetter,
-  misplacedLetter,
-  correctLetter
-}
+
 // Throw this in the utils folder at some point?
 // sorry
-const getEntryProps2 = (positions: number) => (entry: string) =>
-  (entry.length < positions ? [...entry.split('')] : entry.split('')).map(
-    (letter: string) => ({
-      value: letter,
-      state: LetterBoxState.inputStandby
-    })
-  )
-const getEmptyLetterBoxRow = (letterCount: number) =>
+const getEmptyLetterBoxes = (letterCount: number) =>
   new Array<LetterBoxProps>(letterCount).fill({
     value: ' ',
     state: LetterBoxState.vacant
   })
 const getEmptyGridRows = (rows: number, letterCount: number) =>
-  new Array<LetterBoxProps[]>(rows).fill(getEmptyLetterBoxRow(letterCount))
+  new Array<LetterBoxProps[]>(rows).fill(getEmptyLetterBoxes(letterCount))
 
 const placeResultToProps = (position: PlaceResult) => ({
   value: position.letter,
@@ -40,18 +25,15 @@ const placeResultToProps = (position: PlaceResult) => ({
     : LetterBoxState.incorrectLetter
 })
 
-const getTopGrid =
-  (letterCount: number, attempts: number) =>
-  (
-    entryRow: LetterBoxProps[],
-    previousAttempts: PlaceResult[][]
-  ): LetterBoxProps[][] => {
-    return [
-      ...previousAttempts.map(attempt => attempt.map(placeResultToProps)),
-      entryRow
-      // remaining rows
-    ]
-  }
+const getTopGrid = (
+  entryRow: LetterBoxProps[],
+  previousAttempts: PlaceResult[][]
+): LetterBoxProps[][] => {
+  return [
+    ...previousAttempts.map(attempt => attempt.map(placeResultToProps)),
+    entryRow
+  ]
+}
 
 const getEntryProps = (positions: number) => (entry: string) =>
   [
@@ -68,62 +50,14 @@ const getEntryProps = (positions: number) => (entry: string) =>
         ]
       : []),
     ...(entry.length < positions - 1
-      ? getEmptyLetterBoxRow(positions - entry.length - 1)
+      ? getEmptyLetterBoxes(positions - entry.length - 1)
       : [])
   ]
-
-const stateMap: Record<LetterBoxState, string> = {
-  [LetterBoxState.awaitingInput]: '#adc493',
-  [LetterBoxState.thirstyForInput]: '#adc493',
-  [LetterBoxState.inputStandby]: '#adc493',
-  [LetterBoxState.inputSending]: '#adc493',
-  [LetterBoxState.incorrectLetter]: '#adc493',
-  [LetterBoxState.misplacedLetter]: '#adc493',
-  [LetterBoxState.correctLetter]: '#adc493',
-  [LetterBoxState.vacant]: '#adc493'
-}
-
-interface LetterBoxProps {
-  value: string
-  state: LetterBoxState
-  attempts?: number
-}
-
-const LetterBox: FC<LetterBoxProps> = ({ value, state, attempts }) => {
-  return (
-    <Grid
-      item
-      xs={1}
-      sx={{ ...(attempts ? { height: `${100 / attempts}%` } : {}) }}
-    >
-      <Box
-        sx={{
-          p: 2,
-          // justifyContent: 'center',
-          bgcolor: stateMap[state],
-          fontSize: 72,
-          textAlign: 'center'
-        }}
-      >
-        {`${value}`}
-      </Box>
-    </Grid>
-  )
-}
 
 interface AttemptState {
   entry: string
   previousAttempts: PlaceResult[][]
 }
-/*
-* get the empty rows i need
-      ...(getEmptyGridRows(
-        previousAttempts.length + 1 < attempts
-          ? attempts - previousAttempts.length - 1
-          : 0,
-        letterCount
-      ) || [])
-      */
 
 const WordleGrid: FC<{ letterCount: number; attempts: number }> = ({
   letterCount,
@@ -147,10 +81,6 @@ const WordleGrid: FC<{ letterCount: number; attempts: number }> = ({
           : event.key === 'Enter' && wordleTester.validator(entry)
           ? ''
           : entry
-      // Remove these from the game state reducer
-      //const newEntryRow = getEntryProps(letterCount)(newEntry)
-      //const grid = getGrid(letterCount, attempts)(newEntryRow, currentAttempts)
-      // Return rounds
       return {
         entry: newEntry,
         previousAttempts: currentAttempts
@@ -185,7 +115,7 @@ const WordleGrid: FC<{ letterCount: number; attempts: number }> = ({
           spacing={1}
         >
           {[
-            ...getTopGrid(letterCount, attempts)(
+            ...getTopGrid(
               getEntryProps(letterCount)(gameState.entry),
               gameState.previousAttempts
             ),
@@ -205,14 +135,7 @@ const WordleGrid: FC<{ letterCount: number; attempts: number }> = ({
     </Box>
   )
 }
-// Need a grid component
-// Need a letter square component
-//  - needs 4 states:
-//    - Unused
-//    - Wrong letter
-//    - Right letter, wrong position
-//    - right letter, right position
-//    - win
+
 const NotWordle: FC = () => {
   return <WordleGrid letterCount={4} attempts={4} />
 }
